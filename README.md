@@ -8,6 +8,14 @@
 ![JUnit 5](https://img.shields.io/badge/JUnit-5-informational)
 ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-CI-informational)
 
+## Equipe
+
+| Integrante | RA |
+|---|---|
+| Arthur Soares Gardim | 14526 |
+| Guilherme Ananias Calixto Ribeiro | 14652 |
+| Kaiki Teles de Andrade | 14518 |
+
 ## Sobre o projeto
 
 O projeto implementa um fluxo de **integração contínua (CI)** para uma aplicação Java de biblioteca. Cada alteração enviada às branches monitoradas passa por compilação, testes automatizados e geração de um artefato rastreável.
