@@ -1,0 +1,73 @@
+name: "T5 - CI da Biblioteca"
+
+on:
+  push:
+    branches: [main, evidencia-falha]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-e-testes:
+    name: "Compilar, testar e empacotar"
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: "1. Checkout do código"
+        uses: actions/checkout@v7
+
+      - name: "2. Configurar JDK 17 e cache Maven"
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: "3. Validar arquivos obrigatórios"
+        run: |
+          test -f pom.xml
+          test -f src/main/java/br/edu/unialfa/biblioteca/Main.java
+          test -f src/test/java/br/edu/unialfa/biblioteca/BibliotecaServiceTest.java
+
+      - name: "4. Compilar o código"
+        run: mvn --batch-mode --no-transfer-progress -DskipTests compile
+
+      - name: "5. Executar os testes JUnit"
+        run: mvn --batch-mode --no-transfer-progress test
+
+      - name: "6. Gerar JAR executável"
+        run: mvn --batch-mode --no-transfer-progress -DskipTests package
+
+      - name: "7. Verificar a execução do JAR"
+        run: java -jar target/biblioteca-ci-1.0.0.jar
+
+      - name: "8. Registrar identificação e checksum"
+        run: |
+          mkdir -p target/evidencias
+          echo "Repositório: $GITHUB_REPOSITORY" > target/evidencias/build-info.txt
+          echo "Commit: $GITHUB_SHA" >> target/evidencias/build-info.txt
+          echo "Branch/ref: $GITHUB_REF" >> target/evidencias/build-info.txt
+          echo "Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" >> target/evidencias/build-info.txt
+          sha256sum target/biblioteca-ci-1.0.0.jar > target/evidencias/checksum-sha256.txt
+
+      - name: "9. Publicar relatórios de testes (inclusive em falhas)"
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: relatorios-junit-${{ github.run_id }}
+          path: target/surefire-reports/
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: "10. Publicar JAR e rastreabilidade (somente se aprovado)"
+        uses: actions/upload-artifact@v7
+        with:
+          name: biblioteca-jar-${{ github.sha }}
+          path: |
+            target/biblioteca-ci-1.0.0.jar
+            target/evidencias/
+          if-no-files-found: error
+          retention-days: 30
